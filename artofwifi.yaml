@@ -1,0 +1,13 @@
+#cloud-config
+hostname: artofwifi-template
+ssh_pwauth: true
+
+password: password
+chpasswd:
+  expire: False
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - apt: ["php", "mysql-server", "php-curl"]
