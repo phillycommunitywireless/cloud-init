@@ -2,6 +2,8 @@
 hostname: artofwifi-template
 ssh_pwauth: true
 
+# package_upgrade: true 
+
 password: password
 chpasswd:
   expire: False
@@ -10,4 +12,10 @@ package_update: true
 package_upgrade: true
 
 packages:
-  - apt: ["php", "mysql-server", "php-curl"]
+  - apache2
+  - mysql-server
+  - php
+  - libapache2-mod-php
+  - php-mysql
+  - php-curl
+
