@@ -2,8 +2,6 @@
 hostname: artofwifi-template
 ssh_pwauth: true
 
-# package_upgrade: true 
-
 password: password
 chpasswd:
   expire: False
@@ -15,7 +13,21 @@ packages:
   - apache2
   - mysql-server
   - php
-  - libapache2-mod-php
-  - php-mysql
   - php-curl
+  - nodejs 
+  - npm
+  # dependencies for puppeteer
+  - ca-certificates 
+  - fonts-liberation 
+  - libnss3 
+  - lsb-release 
+  - wget 
+  - xdg-utils
+
+# runcmd: 
+#   # enable a2enmod 
+#   - a2enmod rewrite 
+#   # install puppeteer
+#   - npm install puppeteer
+
 
