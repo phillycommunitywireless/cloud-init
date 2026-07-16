@@ -1,2 +1,6 @@
 *.img
 .vscode
+*.pdf
+*.zip
+reporting-files/*
+*.txt
