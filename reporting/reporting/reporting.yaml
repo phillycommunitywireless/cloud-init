@@ -1,0 +1,102 @@
+#cloud-config
+hostname: artofwifi-template
+ssh_pwauth: true
+
+password: password
+chpasswd:
+  expire: False
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - apache2
+  - mysql-server
+  - php
+  - php-curl
+  - php-mysql
+  - nodejs
+  - npm
+  # dependencies for puppeteer / headless Chrome
+  - ca-certificates
+  - fonts-liberation
+  - libnss3
+  - lsb-release
+  - wget
+  - xdg-utils
+
+write_files:
+  # raise PHP max file upload size 
+  - path: /etc/apache2/conf-available/artofwifi-uploads.conf
+    content: |
+      php_value post_max_size 8M
+      php_value upload_max_filesize 8M
+
+  # add vhost config to Apache 
+  - path: /etc/apache2/sites-available/artofwifi.conf
+    content: |
+      #
+      # VirtualHost config for localhost
+      #
+      ServerName localhost
+
+      <VirtualHost *:80>
+          ServerAdmin <test@phillycommunitywireless.org>
+          DocumentRoot /var/www/artofwifi/public
+          ServerName <localhost.com>
+          ServerAlias <localhost>
+          HostnameLookups Off
+          UseCanonicalName Off
+          ErrorDocument 404 /index.php?error=404
+          DirectoryIndex index.php
+          AddType image/x-icon .ico
+
+          <Directory "/var/www/artofwifi/public">
+              Options Indexes FollowSymLinks
+              AllowOverride All
+              Require all granted
+          </Directory>
+      </VirtualHost>
+
+  # adjust MySQL permissions 
+  - path: /etc/mysql/mysql.conf.d/artofwifi.cnf
+    content: |
+      [mysqld]
+      sql_mode=''
+
+runcmd:
+  # enable userdir + rewrite 
+  - a2enmod userdir
+  - a2enmod rewrite
+
+  # switch in apache conf with larger upgrade size 
+  - a2enconf artofwifi-uploads
+
+  # add artofwifi files to apache 
+  - a2dissite 000-default
+  - a2ensite artofwifi
+
+  # apply the relaxed sql_mode
+  - systemctl restart mysql
+
+  # create DB tables 
+  - |
+    mysql -u root <<'SQL'
+    CREATE DATABASE IF NOT EXISTS artofwifi CHARACTER SET utf8mb4;
+    CREATE USER IF NOT EXISTS '<db_user>'@'localhost' IDENTIFIED BY '<db_password>';
+    GRANT ALL PRIVILEGES ON artofwifi.* TO '<db_user>'@'localhost';
+    FLUSH PRIVILEGES;
+    SQL
+
+  # create Dirs for file uploads + custom images 
+  - mkdir -p /var/www/artofwifi/public/images/custom
+  - mkdir -p /var/www/artofwifi/public/images/report
+  - chown -R www-data:www-data /var/www/artofwifi
+  - chmod 0744 /var/www/artofwifi/public/images/custom
+  - chmod 0744 /var/www/artofwifi/public/images/report
+
+  # install puppetteer under the apache path
+  - npm install --prefix /var/www/artofwifi puppeteer
+
+  # restart apache 
+  - systemctl restart apache2
