@@ -1,0 +1,59 @@
+#cloud-config
+hostname: linode-vm2
+ssh_pwauth: true
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - ca-certificates
+  - curl
+  
+chpasswd:
+  expire: false
+  users:
+    - name: ubuntu
+      password: ubuntupass
+      type: text
+
+write_files:
+  - path: /etc/environment
+    append: true
+    content: |
+      http_proxy=http://10.0.0.2:3333
+      https_proxy=http://10.0.0.2:3333
+      no_proxy="localhost,127.0.0.1,localaddress,.localdomain.com"
+
+      HTTP_PROXY=http://10.0.0.2:3333
+      HTTPS_PROXY=http://10.0.0.2:3333
+      NO_PROXY="localhost,127.0.0.1,localaddress,.localdomain.com"
+  - path: /etc/apt/apt.conf
+    content: |
+      Acquire::http::Proxy "http://10.0.0.2:3333";
+      Acquire::https::Proxy "http://10.0.0.2:3333";
+  - path: /etc/systemd/system/docker.service.d/http-proxy.conf
+    content: |
+      [Service]
+      Environment="HTTP_PROXY=http://10.0.0.2:3333"
+      Environment="HTTPS_PROXY=http://10.0.0.2:3333"
+      Environment="NO_PROXY=localhost,127.0.0.1,10.0.0.0/24,vpc.phillycommunitywireless.org"
+
+runcmd:
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl ifconfig.me
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - |
+    tee /etc/apt/sources.list.d/docker.sources <<EOF
+    Types: deb
+    URIs: https://download.docker.com/linux/ubuntu
+    Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+    Components: stable
+    Architectures: $(dpkg --print-architecture)
+    Signed-By: /etc/apt/keyrings/docker.asc
+    EOF
+  - apt update
+  - apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - apt update 
+  - systemctl daemon-reload
+  - systemctl restart docker
