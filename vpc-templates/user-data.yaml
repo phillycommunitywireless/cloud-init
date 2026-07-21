@@ -8,6 +8,8 @@ package_upgrade: true
 packages:
   - ca-certificates
   - curl
+  - prometheus
+  - prometheus-node-exporter
   
 chpasswd:
   expire: false
@@ -57,3 +59,6 @@ runcmd:
   - apt update 
   - systemctl daemon-reload
   - systemctl restart docker
+
+  - systemctl enable prometheus-node-exporter
+  - systemctl start prometheus-node-exporter
